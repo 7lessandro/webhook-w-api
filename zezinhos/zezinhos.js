@@ -15,7 +15,7 @@ const axios = require('axios');
 
 const app = express()
 const server = require('http').createServer(app);
-const port = 80
+const port = process.env.PORT || 3000
 
 //Inf API painel.w-api.app
 
