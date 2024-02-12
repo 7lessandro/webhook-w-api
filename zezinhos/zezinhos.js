@@ -5,17 +5,11 @@ const cron = require('node-cron')
 const conexao = require('./mysql')
 const request = require('request');
 
-//Funções MYSQL
-const Booking = require('./functions/Booking')
-const Costumer = require('./functions/Customer')
-const Service = require('./functions/Service')
-const Agent = require('./functions/Agent')
-
 const axios = require('axios');
 
 const app = express()
 const server = require('http').createServer(app);
-const port = process.env.PORT || 3000
+const port = process.env.ZEZINHOSPORT || 3000
 
 //Inf API painel.w-api.app
 
