@@ -252,8 +252,8 @@ app.get('/webhook/reminder/:bookingid', (req, res) => {
 
 // })
 
-app.listen(3038, () => {
-  console.log(`Servidor OK}`)
+app.listen(port, () => {
+  console.log(`Servidor OK - Funcionando Corretamente.`)
 })
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
