@@ -224,33 +224,33 @@ app.get('/webhook/reminder/:bookingid', (req, res) => {
 })
 
 
-//////////////
+////////////// Comentário do Cron
 
-var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
+// var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
 
-conexao.query(tomorrowsAppointments, function (err, result) {
-  if (err) throw err;
+// conexao.query(tomorrowsAppointments, function (err, result) {
+//   if (err) throw err;
 
-  var numbers = []
-  var bookingCodes = []
+//   var numbers = []
+//   var bookingCodes = []
 
-  result.forEach(booking => {
-    numbers.push(booking.phone)
-    bookingCodes.push(booking.booking_code)
-  });
+//   result.forEach(booking => {
+//     numbers.push(booking.phone)
+//     bookingCodes.push(booking.booking_code)
+//   });
 
-  axios.post('https://host05.serverapi.dev/message/sendTextMany?connectionKey=w-api_MYQX6NCANN',
-    {
-      numbers, message: {
-        text: `Olá! Tudo bem? Estamos passando para te lembrar que amanhã é o seu agendamento, ok? 
+//   axios.post('https://host05.serverapi.dev/message/sendTextMany?connectionKey=w-api_MYQX6NCANN',
+//     {
+//       numbers, message: {
+//         text: `Olá! Tudo bem? Estamos passando para te lembrar que amanhã é o seu agendamento, ok? 
     
-Para mais informações referente ao seu agendamento consulte nossas mensagens anteriores ou acesse nosso site www.www.rkentretenimento.com.br e logue em sua conta.
-    `}, delayMessage: 10000
-    })
-    .then(() => console.log(`Notificação dos seguintes agendamentos enviadas: ${bookingCodes}`))
-    .catch((error) => console.log(`Ops, erro ao enviar a notificação. ${error.message}`))
+// Para mais informações referente ao seu agendamento consulte nossas mensagens anteriores ou acesse nosso site www.www.rkentretenimento.com.br e logue em sua conta.
+//     `}, delayMessage: 10000
+//     })
+//     .then(() => console.log(`Notificação dos seguintes agendamentos enviadas: ${bookingCodes}`))
+//     .catch((error) => console.log(`Ops, erro ao enviar a notificação. ${error.message}`))
 
-})
+// })
 
 app.listen(port, () => {
   console.log(`Servidor OK}`)
