@@ -139,8 +139,8 @@ app.post('/webhook/create', (req, res) => {
       }).then(response => { console.log(`Notificação do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`Erro ao realizar o envio WhatsApp do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
 
     conexao.query(`INSERT INTO wp_latepoint_reminders (booking_code, date, hour, phone, message, active, sent) VALUES  ("${req.body.booking_code}", "${date}", "${hour}", "${phoneNumber}", "${mensagem_reminder}", "yes", "no")`), async function (error, results, fields) {
-      console.log(`Agendamento ${req.body.booking_code} realizado com sucesso.`)
       if (error) throw err;
+      console.log(`Agendamento ${req.body.booking_code} realizado com sucesso.`)
     }
   }
 
