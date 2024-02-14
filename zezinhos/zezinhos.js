@@ -3,7 +3,6 @@ const cors = require('cors')
 const bodyParser = require('body-parser');
 const cron = require('node-cron')
 const conexao = require('./mysql')
-const request = require('request');
 
 const axios = require('axios');
 
@@ -31,7 +30,6 @@ app.use((req, res, next) => {
 });
 
 //BodyParser
-
 app.use(bodyParser.json({
   extended: true,
   limit: '100000kb',
@@ -41,7 +39,7 @@ app.use(bodyParser.urlencoded({
   limit: '100000kb',
 }));
 
-//MYSQL Wordpress LatePoint
+// //MYSQL Wordpress LatePoint
 conexao.connect(function (erro) {
   if (erro) throw erro;
   console.log('conexão efetuada')
@@ -76,9 +74,8 @@ day = day.length == 1 ?
 const tomorrow = `${day}/${month}/${year}`;
 
 //Rotas
-
 app.get('/', (req, res) => {
-  res.send('olá, essa é a página inicial')
+  res.send('Olá, Zezinhos! Este é o seu WebHook =)')
 })
 
 //Notificação quando o agendamento é criado.
@@ -91,22 +88,31 @@ app.post('/webhook/create', (req, res) => {
 
     var name_barber = req.body.agent.full_name
     var price = req.body.price
+    var payment = req.body.payment_method
     var service = req.body.service_name
     var duration = req.body.duration
     var date = req.body.start_date
     var hour = req.body.start_time
 
-    var agendamentos = "SELECT * from wp_latepoint_bookings WHERE status = 'approved' "
+    if (payment === 'local') {
+      payment = 'Pagamento Presencial'
+    }
 
-    var mensagem = `Olá, ${name_client} 😊
+    var mensagem = `Olá *${name_client}*!
 
-    *O seu agendamento foi realizado com sucesso!*
+Como você está?
     
-    *Barbeiro*: ${name_barber}.
-    *Serviço:* ${service}.
-    *Valor Total:* ${price}.
-    *Duração:* ${duration} min.
-    *Data do Agendamento:* ${date} às ${hour}`
+Somos da *Zezinhos Barbearia* e gostaríamos de informar que seu agendamento com nosso barbeiro *${name_barber}* 💇🏻‍♂️ foi realizado com sucesso ✅
+
+Estaremos te esperando no dia *${date}* às *${hour}h* 📆
+    
+Você agendou o serviço de *${service}*, com um tempo estimado de finalização de *${duration} minutos* ⏱️.
+A forma de pagamento selecionada foi *${payment}* com o valor total de *${price}* 💵
+
+*Endereço:*
+📍 Rua Dr. Ruy Barbosa, 279 - Vila Hortência, Sorocaba - SP.
+    
+Até mais! 😄`
 
     var mensagem_reminder =
       `
@@ -120,16 +126,7 @@ app.post('/webhook/create', (req, res) => {
 
     axios.post('https://host05.serverapi.dev/message/sendText?connectionKey=w-api_MYQX6NCANN',
       {
-        phoneNumber, message:
-          `Olá, ${name_client} 😊
-
-*O seu agendamento foi realizado com sucesso!*
-
-*Barbeiro*: ${name_barber}.
-*Serviço:* ${service}.
-*Valor Total:* ${price}.
-*Duração:* ${duration} min.
-*Data do Agendamento:* ${date} às ${hour}`, delayMessage: 5000
+        phoneNumber, message: mensagem, delayMessage: 5000
       }).then(response => { console.log(`Notificação do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`Erro ao realizar o envio WhatsApp do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
 
     conexao.query(`INSERT INTO wp_latepoint_reminders (booking_code, date, hour, phone, message, active, sent) VALUES  ("${req.body.booking_code}", "${date}", "${hour}", "${phoneNumber}", "${mensagem_reminder}", "yes", "no")`), async function (error, results, fields) {
@@ -217,83 +214,70 @@ app.get('/webhook/reminder/:bookingid', (req, res) => {
   }
 })
 
+//Enviar mensagem após finalização do serviço
+app.post('/webhook/end', (req, res) => {
 
-////////////// Comentário do Cron
+  function toMessage() {
+    var phone = req.body.customer.custom_fields.cf_wPDBOZcQ
+    var phoneNumber = phone.match(/\d/g).join("")
+    var name_client = req.body.customer.full_name
 
-// var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
+    var name_barber = req.body.agent.full_name
+    var price = req.body.price
+    var service = req.body.service_name
+    var duration = req.body.duration
+    var date = req.body.start_date
+    var hour = req.body.start_time
 
-// conexao.query(tomorrowsAppointments, function (err, result) {
-//   if (err) throw err;
+    axios.post('https://host05.serverapi.dev/message/sendImageUrl?connectionKey=w-api_MYQX6NCANN',
+      {
+        phoneNumber, url: "https://genialcarimbos.com.br/cdn/shop/products/1781a8c181ce929429300a42c7a58d5b.png?v=1668608769", caption: `Obrigado *${name_client}* por confiar em nosso trabalho. Ficamos muito felizes com a sua presença hoje em nossa barbearia.
+O seu feedback é muito importante para nós, fique a vontade para dizer o que você acha:
 
-//   var numbers = []
-//   var bookingCodes = []
+Avaliação: https://abre.ai/iTmS`
 
-//   result.forEach(booking => {
-//     numbers.push(booking.phone)
-//     bookingCodes.push(booking.booking_code)
-//   });
+      }).then(response => { console.log(`Notificação do agendamento para avaliação ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`Erro ao realizar o envio WhatsApp da Avaliação do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
+  }
 
-//   axios.post('https://host05.serverapi.dev/message/sendTextMany?connectionKey=w-api_MYQX6NCANN',
-//     {
-//       numbers, message: {
-//         text: `Olá! Tudo bem? Estamos passando para te lembrar que amanhã é o seu agendamento, ok? 
-    
-// Para mais informações referente ao seu agendamento consulte nossas mensagens anteriores ou acesse nosso site www.www.rkentretenimento.com.br e logue em sua conta.
-//     `}, delayMessage: 10000
-//     })
-//     .then(() => console.log(`Notificação dos seguintes agendamentos enviadas: ${bookingCodes}`))
-//     .catch((error) => console.log(`Ops, erro ao enviar a notificação. ${error.message}`))
-
-// })
+  if (res.statusCode == 200) {
+    res.send(toMessage())
+  } else {
+    console.log(`Erro ao enviar a notificação da Avaliação. Erro: ${res.statusCode}`)
+  }
+})
 
 app.listen(port, () => {
   console.log(`Servidor OK - Funcionando Corretamente.`)
 })
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 
-//CronJobs -> Lembrete para acessar os Reminders
+// Rotina Cron Job para lembrar que o cliente possui um agendamento marcado para a data de amanhã (Enviado todo dia às 19h00)
+cron.schedule('0 19 * * *', () => {
+  var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
 
-//Fazer uma atualização todo dia as 23:00 para reativar os lembretes
+  conexao.query(tomorrowsAppointments, function (err, result) {
+    if (err) throw err;
 
-// cron.schedule('* * * * * *', () => {
-//   console.log('Rodando a cada 5 minutos uma ação para visualizar se tem agendamentos para a data de amanhã para enviar uma notificação de lembrete');
+    var numbers = []
+    var bookingCodes = []
 
-//   conexao.connect(function (erro) {
-//     if (erro) throw erro;
-//     console.log('conexão efetuada')
+    result.forEach(booking => {
+      numbers.push(booking.phone)
+      bookingCodes.push(booking.booking_code)
+    });
 
-//     var agendamentosAprovados = `SELECT * FROM wp_latepoint_reminders WHERE date like "%${amanhã}%"`
-//     console.log(agendamentosAprovados)
+    axios.post('https://host05.serverapi.dev/message/sendTextMany?connectionKey=w-api_MYQX6NCANN',
+      {
+        numbers, message: {
+          text: `*⚠️ ATENÇÃO ⚠️*
+Boa noite, tudo bem? Estamos passando para te lembrar que amanhã é o seu agendamento, ok? 
+    
+Para mais informações referente ao seu agendamento consulte nossas mensagens anteriores ou acesse nosso site ZezinhosBarbearia.com.br e logue em sua conta.
+    `}, delayMessage: 5000
+      })
+      .then(() => console.log(`Cron Jobs dos lembretes enviados: ${bookingCodes}`))
+      .catch((error) => console.log(`Ops, erro ao enviar a notificação Cron dos Lembretes. ${error.message}`))
 
-// conexao.query(agendamentosAprovados, function (erro, agendamento) {
-//   if (erro) throw erro;
-//   //Verificar se possui algum agendamento para amanhã
-//   if (agendamento[0] != undefined) {
-
-//     var cliente = `SELECT id, first_name, email, phone FROM wp_latepoint_customers WHERE id = ${agendamento[0].agent_id}`
-//     conexao.query(cliente, function (erro, cliente) {
-//       if (erro) throw erro;
-
-//       //Localizar o cliente em base do ID do resultado anterior do agendamento
-//       if (cliente[0] != undefined) {
-//         console.log(cliente)
-//       } else {
-//         //Erro caso não localize nenhum cliente
-//         console.log('Não possui nenhum cliente com este ID')
-//       }
-//     })
-//   } else {
-//     //Caso não tenha, enviar uma mensagem de erro
-//     console.log('Não possui nenhum agendamento para amanhã =)')
-//   }
-// })
-
-//////////////////////////
-
-//   })
-
-// }, {
-//   scheduled: true,
-//   timezone: "America/Sao_Paulo"
-// });
+  })
+})
