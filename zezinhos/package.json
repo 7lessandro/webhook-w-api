@@ -6,8 +6,6 @@
     "express": "^4.18.2",
     "moment": "^2.30.1",
     "mysql2": "^3.9.1",
-    "node-cron": "^3.0.3",
-    "request": "^2.88.2",
-    "sequelize": "^6.36.0"
+    "node-cron": "^3.0.3"
   }
 }
