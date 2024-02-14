@@ -34,9 +34,9 @@ const axios = require('axios');
 //Conexão MYSQL
 const conexao = mysql.createConnection({
     host: '185.214.126.5',
-    user: 'u871428688_j3RxS',
-    password: 'Zezinho@1',
-    database: 'u871428688_2i1Rj'
+    user: 'u871428688_cN35V',
+    password: 'gCwNjV8AaO',
+    database: 'u871428688_Rlg2E',
 })
 
 // var numbers = []
