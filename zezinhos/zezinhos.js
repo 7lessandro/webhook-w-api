@@ -39,18 +39,15 @@ app.use(bodyParser.urlencoded({
   limit: '100000kb',
 }));
 
-// //MYSQL Wordpress LatePoint
-conexao.connect(function (erro) {
-  if (erro) throw erro;
-  console.log('conexão efetuada')
-})
+app.set('view engine', 'ejs');
+app.set('views', './views');
 
 //Data Atual
 const moment = require('moment');
-const { setTimeout } = require('timers/promises');
+moment.locale('pt-br');
 
 var localTime = moment().format('YYYY-MM-DD'); // store localTime
-var hoje = localTime
+var logHour = moment().format('LLL')
 
 //Data de amanhã
 let d = new Date();
@@ -75,7 +72,11 @@ const tomorrow = `${day}/${month}/${year}`;
 
 //Rotas
 app.get('/', (req, res) => {
-  res.send('Olá, Zezinhos! Este é o seu WebHook =)')
+  res.json({
+    "barber": "Zezinhos Barbearia",
+    "status": res.statusCode,
+    "server_start": `${logHour}`
+  })
 })
 
 //Notificação quando o agendamento é criado.
@@ -167,17 +168,17 @@ O seu barbeiro ${name_barber} já foi notificado, tá bom? Estaremos sempre à d
     axios.post('https://host05.serverapi.dev/message/sendText?connectionKey=w-api_MYQX6NCANN',
       {
         phoneNumber, message, delayMessage: 5000
-      }).then(response => { console.log(`Notificação do cancelamento do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(error) })
+      }).then(response => { console.log(`${logHour} | Notificação do cancelamento do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(error) })
 
     conexao.query(`UPDATE wp_latepoint_reminders SET active = 'no' where booking_code = '${req.body.booking_code}'`, async function (error, results, fields) {
-      console.log(`${req.body.booking_code} foi cancelado com sucesso.`)
+      console.log(`${logHour} | ${req.body.booking_code} foi cancelado com sucesso.`)
     })
   }
 
   if (res.statusCode == 200) {
     res.send(toMessage())
   } else {
-    console.log(`Erro ao enviar a notificação. Erro: ${res.statusCode}`)
+    console.log(`${logHour} | Erro ao enviar a notificação. Erro: ${res.statusCode}`)
   }
 })
 
@@ -236,24 +237,22 @@ O seu feedback é muito importante para nós, fique a vontade para dizer o que v
 
 Avaliação: https://abre.ai/iTmS`
 
-      }).then(response => { console.log(`Notificação do agendamento para avaliação ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`Erro ao realizar o envio WhatsApp da Avaliação do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
+      }).then(response => { console.log(`${logHour} | Notificação do agendamento para avaliação ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`${logHour} | Erro ao realizar o envio WhatsApp da Avaliação do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
   }
 
   if (res.statusCode == 200) {
     res.send(toMessage())
   } else {
-    console.log(`Erro ao enviar a notificação da Avaliação. Erro: ${res.statusCode}`)
+    console.log(`${logHour} | Erro ao enviar a notificação da Avaliação. Erro: ${res.statusCode}`)
   }
 })
 
 app.listen(port, () => {
-  console.log(`Servidor OK - Funcionando Corretamente.`)
+  console.log(`${logHour} | Servidor OK - Funcionando Corretamente.`)
 })
 
-/////////////////////////////////////////////////////
-
 // Rotina Cron Job para lembrar que o cliente possui um agendamento marcado para a data de amanhã (Enviado todo dia às 19h00)
-cron.schedule('0 19 * * *', () => {
+cron.schedule('20 09 * * *', () => {
   var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
 
   conexao.query(tomorrowsAppointments, function (err, result) {
@@ -274,10 +273,13 @@ cron.schedule('0 19 * * *', () => {
 Boa noite, tudo bem? Estamos passando para te lembrar que amanhã é o seu agendamento, ok? 
     
 Para mais informações referente ao seu agendamento consulte nossas mensagens anteriores ou acesse nosso site ZezinhosBarbearia.com.br e logue em sua conta.
-    `}, delayMessage: 5000
+    `}, delayMessage: 9000
       })
-      .then(() => console.log(`Cron Jobs dos lembretes enviados: ${bookingCodes}`))
-      .catch((error) => console.log(`Ops, erro ao enviar a notificação Cron dos Lembretes. ${error.message}`))
+      .then(() => console.log(`${logHour} | Cron Jobs dos lembretes enviados: ${bookingCodes}`))
+      .catch((error) => console.log(`${logHour} | Ops, erro ao enviar a notificação Cron dos Lembretes. ${error.message}`))
 
   })
-})
+}, {
+  scheduled: true,
+  timezone: "America/Sao_Paulo"
+});
