@@ -1,5 +1,5 @@
 //MYSQL Conexão com DB PhPMYADMIN Wordpress (LatePoint)
-const mysql = require('mysql2')
+const mysql = require('mysql')
 const axios = require('axios');
 
 const moment = require('moment');

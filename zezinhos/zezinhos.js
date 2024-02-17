@@ -128,18 +128,18 @@ Até mais! 😄`
     axios.post('https://host05.serverapi.dev/message/sendText?connectionKey=w-api_MYQX6NCANN',
       {
         phoneNumber, message: mensagem, delayMessage: 5000
-      }).then(response => { console.log(`Notificação do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`Erro ao realizar o envio WhatsApp do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
+      }).then(response => { console.log(`${logHour} | Notificação do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`${logHour} | Erro ao realizar o envio WhatsApp do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
 
     conexao.query(`INSERT INTO wp_latepoint_reminders (booking_code, date, hour, phone, message, active, sent) VALUES  ("${req.body.booking_code}", "${date}", "${hour}", "${phoneNumber}", "${mensagem_reminder}", "yes", "no")`), async function (error, results, fields) {
       if (error) throw err;
-      console.log(`Agendamento ${req.body.booking_code} realizado com sucesso.`)
+      console.log(`${logHour} | Agendamento ${req.body.booking_code} realizado com sucesso.`)
     }
   }
 
   if (res.statusCode == 200) {
     res.send(toMessage())
   } else {
-    console.log(`Erro ao enviar a notificação. Erro: ${res.statusCode}`)
+    console.log(`${logHour} | Erro ao enviar a notificação. Erro: ${res.statusCode}`)
   }
 })
 
