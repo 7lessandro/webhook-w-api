@@ -2,12 +2,17 @@ const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser');
 const cron = require('node-cron')
-const conexao = require('./mysql')
+
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const ObjectId = Schema.ObjectId;
+
+const mysql = require('mysql')
 
 const axios = require('axios');
 
 const app = express()
-const server = require('http').createServer(app);
+
 const port = process.env.ZEZINHOSPORT || 3000
 
 //Inf API painel.w-api.app
@@ -70,6 +75,41 @@ day = day.length == 1 ?
 // Data atual
 const tomorrow = `${day}/${month}/${year}`;
 
+//Conexão MYSQL
+// const conexao = mysql.createConnection({
+//   host: '185.214.126.5',
+//   user: 'u871428688_cN35V',
+//   password: 'gCwNjV8AaO',
+//   database: 'u871428688_Rlg2E',
+// })
+
+// //MYSQL Wordpress LatePoint
+// conexao.connect(function (erro) {
+//   if (erro) throw erro;
+//   console.log(`${logHour} | MySQL OK - Funcionando Corretamente.`)
+// })
+
+// conexao.connect()
+
+// MongoDB Conexão
+mongoose.Promise = global.Promise
+mongoose.connect('mongodb://127.0.0.1:27017/zezinhos_barber')
+  .then(() => console.log(`${logHour} | MongoDB OK - Funcionando Corretamente.`));
+
+//Model Reminders
+const ReminderSchema = new Schema({
+  id: ObjectId,
+  booking_code: String,
+  date: String,
+  hour: String,
+  phone: String,
+  message: String,
+  active: String,
+  sent: String,
+})
+
+const Reminder = mongoose.model('Reminders', ReminderSchema);
+
 //Rotas
 app.get('/', (req, res) => {
   res.json({
@@ -130,10 +170,15 @@ Até mais! 😄`
         phoneNumber, message: mensagem, delayMessage: 5000
       }).then(response => { console.log(`${logHour} | Notificação do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(`${logHour} | Erro ao realizar o envio WhatsApp do agendamento ${req.body.booking_code}, informações do erro:${error}`) })
 
-    conexao.query(`INSERT INTO wp_latepoint_reminders (booking_code, date, hour, phone, message, active, sent) VALUES  ("${req.body.booking_code}", "${date}", "${hour}", "${phoneNumber}", "${mensagem_reminder}", "yes", "no")`), async function (error, results, fields) {
-      if (error) throw err;
-      console.log(`${logHour} | Agendamento ${req.body.booking_code} realizado com sucesso.`)
-    }
+    new Reminder({
+      booking_code: req.body.booking_code,
+      date: date,
+      hour: hour,
+      phone: phoneNumber,
+      message: mensagem_reminder,
+      active: 'yes',
+      sent: 'no'
+    }).save().then(() => { console.log(`${logHour} | Agendamento ${req.body.booking_code} realizado com sucesso.`)}).catch(() => { console.log(`${logHour} | Erro ao realizar agendamento ${req.body.booking_code}.`) })
   }
 
   if (res.statusCode == 200) {
@@ -170,9 +215,14 @@ O seu barbeiro ${name_barber} já foi notificado, tá bom? Estaremos sempre à d
         phoneNumber, message, delayMessage: 5000
       }).then(response => { console.log(`${logHour} | Notificação do cancelamento do agendamento ${req.body.booking_code} realizada com sucesso.`) }).catch(error => { console.log(error) })
 
-    conexao.query(`UPDATE wp_latepoint_reminders SET active = 'no' where booking_code = '${req.body.booking_code}'`, async function (error, results, fields) {
-      console.log(`${logHour} | ${req.body.booking_code} foi cancelado com sucesso.`)
-    })
+    // conexao.query(`UPDATE wp_latepoint_reminders SET active = 'no' where booking_code = '${req.body.booking_code}'`, async function (error, results, fields) {
+    //   console.log(`${logHour} | ${req.body.booking_code} foi cancelado com sucesso.`)
+    // })
+
+    Reminder.findOneAndUpdate({booking_code: req.body.booking_code}, {active: 'no'})
+    .then(() => {console.log(`${logHour} | ${req.body.booking_code} foi cancelado com sucesso.`)})
+    .catch(() =>{console.log(`${logHour} | Erro ao realizar o cancelamento do agendamento ${req.body.booking_code}.`)})
+
   }
 
   if (res.statusCode == 200) {
@@ -252,7 +302,7 @@ app.listen(port, () => {
 })
 
 // Rotina Cron Job para lembrar que o cliente possui um agendamento marcado para a data de amanhã (Enviado todo dia às 19h00)
-cron.schedule('20 09 * * *', () => {
+cron.schedule('0 15 * * *', () => {
   var tomorrowsAppointments = `SELECT * FROM wp_latepoint_reminders WHERE date = "${tomorrow}" AND active = "yes" AND sent = "no";`
 
   conexao.query(tomorrowsAppointments, function (err, result) {
